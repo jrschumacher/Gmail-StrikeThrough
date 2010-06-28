@@ -1,0 +1,18 @@
+{
+  "name": "Gmail StrikeThrough",
+  "version": "1.0",
+  "description": "Enable StrikeThrough in Gmail or Google Apps Mail.",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "background_page": "background.html",
+  "permissions": [
+    "tabs",
+    "http://*.gmail.com/*",
+    "https://*.gmail.com/*",
+    "http://mail.google.com/*",
+    "https://mail.google.com/*"
+  ]
+}
