@@ -1,30 +1,13 @@
-<html>
-<head>
-  <script type="text/javascript">
-    
-    var gmailStrikeThroughButtonJs = 'gmailStrikeThroughButton.js';
-    
-    function isGmailUrl(url){
-      return (/^https?:\/\/(www\.)?(gmail|mail\.google)\.com/.test(url));
-    }
-  
-    function initalizeGmailStrikeThroughButton(tabId){
-      chrome.tabs.executeScript(tabId, {file: gmailStrikeThroughButtonJs});
-    }
-    
-    chrome.tabs.onSelectionChanged.addListener(function(tabId, selectInfo) {
-      chrome.tabs.get(tabId, function(tab){
-        if(isGmailUrl(tab.url)){
-          initalizeGmailStrikeThroughButton(tabId);
-        }
-      });
-    });
-    chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-      if(isGmailUrl(tab.url)){
-        initalizeGmailStrikeThroughButton(tabId);
-      }
-    });
-  </script>
-</head>
-<body></body>
-</html>
+<html><head><script type="text/javascript">
+function isGmailUrl(url){
+  return (/^https?:\/\/(www\.)?(gmail|mail\.google)\.com/.test(url));
+}
+function initalizeGmailStrikeThrough(tabId){
+  chrome.tabs.executeScript(tabId, {file: 'gmailStrikeThroughButton.js'});
+}
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab){
+  if(isGmailUrl(tab.url)){
+    initalizeGmailStrikeThrough(tabId);
+  }
+});
+</script></head><body></body></html>

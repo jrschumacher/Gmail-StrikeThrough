@@ -20,36 +20,64 @@
 if(gmailStrikeThroughButton == undefined) {
   var gmailStrikeThroughButton = {
   
+    debug: false,
+    richTextBar: null,
     strikethroughButton: null,
     underlineButton: null,
     activeButtonClassName: null,
     canvas_frame_document: null,
     text_editor: null,
   
+    /**
+     * Get Icon
+     */
     getIcon: function() {
       var icon = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAZiS0dEA"+"P8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9kJDRI0ElGuqEoAAAAZdE"+"VYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAyUlEQVQ4y83TP0pDQRDH8Y8GYm2"+"nhUUKKxNJ9AQpU6TwBnqIHCCQwkMEz6FdEHIBG7UQUtq8IlUeKDybeRDC+2eqDCwL+/vNd2bZ"+"WQ4xRnhGgt/Yl5jhui75HlmYz9DCKe6wCq0yvsLUKtBumwB+wnSz7/3fA5Bgii6O/gMYYxOQf"+"K3xikdc7ibk9GzPjht1d44HfEShzypzhk6JdhF6un14XGCclADyxLe6DjLMMcAJ2ujjJSDDKk"+"Avnm+B75iLNAbsCVeH9/P+AIavLWYxaRcUAAAAAElFTkSuQmCC";
       return icon;
     },
   
+    /**
+     * Get Active Button Class Name
+     */
     getActiveButtonClassName: function() {
-      var xPathResult = this.canvas_frame_document.evaluate("//img[@command='+justifyLeft']",this.canvas_frame_document, null, 
-      XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-      var allClasses=xPathResult.snapshotItem(0).className.split(" "); // a small hack to get the active button class name
-      if (allClasses.length > 2) {
-        this.activeButtonClassName=allClasses[allClasses.length-1]; // rather than using a constant, since the one of the "justify" button is initially active
-      } else {
-        xPathResult = this.canvas_frame_document.evaluate("//img[@command='+justifyRight']", this.canvas_frame_document, null, 
-        XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-        allClasses=xPathResult.snapshotItem(0).className.split(" ");
-        this.activeButtonClassName=allClasses[allClasses.length-1];
-      }
+      var xPathResult = this.canvas_frame_document.evaluate("//img[@command='+justifyLeft']",this.canvas_frame_document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+      
+      if(xPathResult.snapshotItem(0) == null) return false;
+      
+      // a small hack to get the active button class name
+      var allClasses=xPathResult.snapshotItem(0).className.split(" ");
+      
+      if(allClasses.length > 2) {
+        /* rather than using a constant, since the one of the "justify" button is initially active */
+        this.activeButtonClassName = allClasses[allClasses.length-1]; 
+        return true;
+      } 
+      
+      xPathResult = this.canvas_frame_document.evaluate("//img[@command='+justifyRight']", this.canvas_frame_document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+      
+      allClasses=xPathResult.snapshotItem(0).className.split(" ");
+      
+      if(allClasses.length <= 2) return false;
+      this.activeButtonClassName = allClasses[allClasses.length-1];
+      return true;
     },
-  
+    
+    /**
+     * Set Strike Through
+     */
     setStrikeThrough: function() {
+      if(gmailStrikeThroughButton.text_editor == null) {
+        if(gmailStrikeThroughButton.loadTextEditor() == false) {
+          return false;
+        }
+      }
       gmailStrikeThroughButton.text_editor.execCommand("strikethrough", false, '');
       gmailStrikeThroughButton.checkForStrikes();
     },
-  
+    
+    /**
+     * Add Button
+     */
     addButton: function() {
       this.strikethroughButton=this.underlineButton.cloneNode(true);
       this.strikethroughButton.setAttribute("title", "Strikethrough");
@@ -64,6 +92,9 @@ if(gmailStrikeThroughButton == undefined) {
   
     },
   
+    /**
+     * Check for strikes
+     */
     checkForStrikes: function() {
       var classRegEx = new RegExp(" " + gmailStrikeThroughButton.activeButtonClassName, "g");
       if (gmailStrikeThroughButton.text_editor.queryCommandState("strikethrough")) {
@@ -76,75 +107,76 @@ if(gmailStrikeThroughButton == undefined) {
     },
     
     /**
-     * Load Canvas, loads the Gmail canvas
+     * Load the text editor
      */
-    loadCanvas: function() {
-      if (document.getElementById("canvas_frame")) {
-        this.canvas_frame_document = document.getElementById("canvas_frame").contentDocument;
-        this.text_editor = this.canvas_frame_document.evaluate("//iframe[contains(@class, 'editable')]", this.canvas_frame_document, null, 
-        XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0).contentDocument
-      } else {
-        this.canvas_frame_document = window.parent.document;
+    loadTextEditor: function() {
+      this.text_editor = null;
+      if(document.getElementById('canvas_frame')) {
+        var xPathResult = this.canvas_frame_document.evaluate("//iframe[contains(@class, 'editable')]", this.canvas_frame_document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+            
+        if(xPathResult.snapshotItem(0) != null) {
+          this.text_editor = xPathResult.snapshotItem(0).contentDocument;
+        }
+      }
+      else {
         this.text_editor = document;
       }
-      if (!this.text_editor) return false;
-      var xPathResult = this.canvas_frame_document.evaluate("//img[@command='+underline']", this.canvas_frame_document, null, 
-        XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
-      if (this.underlineButton=xPathResult.snapshotItem(0)) { // =!
-        this.getActiveButtonClassName();
+      
+      if(this.text_editor == null) return false;
+      
+      // Start Listeners
+      this.text_editor.addEventListener("click", this.checkForStrikes, false);
+      this.text_editor.addEventListener("keyup", this.checkForStrikes, false);
+      return true;
+    },
+    
+    /**
+     * Load Rich Text Bar, loads the rich text bar
+     */
+    loadRichTextBar: function() {      
+      var xPathResult = this.canvas_frame_document.evaluate("//img[@command='+underline']", this.canvas_frame_document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+      
+      if(this.underlineButton=xPathResult.snapshotItem(0)) {
+        this.addButton();
         return true;
       }
       return false;
     },
     
     /**
-     * Destroy, destroys the current instance
+     * Ping Canvas, monitors the canvas for any change in the rich text bar
+     *
+     * Used to 
      */
-    destroy: function() {
-      this.strikethroughButton = null;
-      this.underlineButton = null;
-      this.activeButtonClassName = null;
-      this.canvas_frame_document = null;
-      this.text_editor = null;
-    },
-  
-    init: function() {
-      this.destroy();
-      if(this.loadCanvas()) {
-        this.addButton();
-        this.text_editor.addEventListener("click", this.checkForStrikes, false);
-        this.text_editor.addEventListener("keyup", this.checkForStrikes, false);
+    pingCanvas: function() {
+      if( gmailStrikeThroughButton.canvas_frame_document .getElementById("GmailRichTextBar") == null) {
+        if(gmailStrikeThroughButton.getActiveButtonClassName()) {
+          var xPathResult = this.evaluate("//img[@command='+bold']", this, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+          gmailStrikeThroughButton.richTextBar = xPathResult.snapshotItem(0) .parentNode.parentNode;
+          gmailStrikeThroughButton.richTextBar.setAttribute('id', 'GmailRichTextBar');
+          
+          gmailStrikeThroughButton.loadRichTextBar();
+        }
+        gmailStrikeThroughButton.loadTextEditor();
       }
-      return;
     },
     
     /**
-     * Reinit, reinitalize gmailstrikethrough
+     * Load Canvas, loads the Gmail canvas
      */
-    reinit: function() {
-      var hasButton = false;
-      
-      // Reload the current canvas
-      gmailStrikeThroughButton.loadCanvas();
-      
-      // Search for canvas buttons 
-      var children = gmailStrikeThroughButton.underlineButton.parentNode.children;
-      for(var i = 0; i < children.length; i++) {
-        if(children[i].title == 'Strikethrough') {
-          hasButton = true;
-        }
+    loadCanvas: function() {
+      this.debug && console.log('Loading canvas...');
+      if(document.getElementById("canvas_frame")) {
+        this.canvas_frame_document = document.getElementById("canvas_frame").contentDocument;
       }
-      
-      // If button doesn't exist
-      if(!hasButton) {
-        gmailStrikeThroughButton.init();
+      else {
+        this.canvas_frame_document = window.parent.document;
       }
+      // Start canvas monitor
+      this.canvas_frame_document.addEventListener("DOMSubtreeModified", this.pingCanvas, false);
     }
   }
   
-  gmailStrikeThroughButton.init();
-} 
-// Reinitalize the button
-else {
-  gmailStrikeThroughButton.reinit();
+  // Initalize gmail strike through
+  gmailStrikeThroughButton.loadCanvas();
 }
