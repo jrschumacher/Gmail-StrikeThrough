@@ -3,6 +3,7 @@ function isGmailUrl(url){
   return (/^https?:\/\/(www\.)?(gmail|mail\.google)\.com/.test(url));
 }
 function initalizeGmailStrikeThrough(tabId){
+  chrome.tabs.executeScript(tabId, {file: 'sizzle.min.js'});
   chrome.tabs.executeScript(tabId, {file: 'gmailStrikeThroughButton.js'});
 }
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab){
